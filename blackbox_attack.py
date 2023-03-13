@@ -19,7 +19,7 @@ class BlackBoxAttack(object):
                  max_crit_queries=np.inf,
                  epsilon=0.5, p='inf', lb=0., ub=1., name="nes", attack_model=None, attack_mode=None,
                  attack_logistics=None, loss=None, targeted=None, ori_img=None, model_name=None, zeta=None,
-                 lambda1=None, patch_attack=None, keypoints_models=None, square_init=None):
+                 lambda1=None, patch_attack=None, keypoints_models=None, square_init=None, attack_parallel=1):
         """
         Args:
             max_loss_queries ([int]): [ maximum number of calls allowed to loss oracle per data pt]
@@ -65,7 +65,7 @@ class BlackBoxAttack(object):
         self.patch_attack = patch_attack
         self.keypoints_models = keypoints_models
         # self.square_expansion = square_expansion
-        # self.attack_parallel = attack_parallel
+        self.attack_parallel = attack_parallel
         self.square_init = square_init
         # the _proj method takes pts and project them into the constraint set:
         # which are
@@ -309,6 +309,7 @@ class BlackBoxAttack(object):
             # updated x here
             dones = np.all(dones_mask)
             xs_t = self.proj_replace(xs_t, sugg_xs_t, t(dones.reshape(-1, *[1] * num_axes).astype(np.float32)))
+            print("run oke")
 
             # feature, _ = loss_fct(xs_t.cpu().numpy(), com = True)
             # inner = ch.mm(feature_oo,feature.transpose(0,1))
@@ -340,11 +341,13 @@ class BlackBoxAttack(object):
             # pdb.set_trace()
             # feature_o = feature
             xs_to = xs_t
-            if len(img_metas) != 1:
-                data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
-                data['img'][1] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
-            else:
-                data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+
+            # comment by vuotnh
+            # if len(img_metas) != 1:
+            #     data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+            #     data['img'][1] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+            # else:
+            data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
 
             # visualize opt step
             if vis_attack_step is not None and vis_attack_step:
