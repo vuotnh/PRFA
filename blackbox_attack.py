@@ -19,7 +19,7 @@ class BlackBoxAttack(object):
                  max_crit_queries=np.inf,
                  epsilon=0.5, p='inf', lb=0., ub=1., name="nes", attack_model=None, attack_mode=None,
                  attack_logistics=None, loss=None, targeted=None, ori_img=None, model_name=None, zeta=None,
-                 lambda1=None, patch_attack=None, keypoints_models=None):
+                 lambda1=None, patch_attack=None, keypoints_models=None, square_init=None):
         """
         Args:
             max_loss_queries ([int]): [ maximum number of calls allowed to loss oracle per data pt]
@@ -66,7 +66,7 @@ class BlackBoxAttack(object):
         self.keypoints_models = keypoints_models
         # self.square_expansion = square_expansion
         # self.attack_parallel = attack_parallel
-        # self.square_init = square_init
+        self.square_init = square_init
         # the _proj method takes pts and project them into the constraint set:
         # which are
         #  1. epsilon lp-ball around xs
@@ -156,10 +156,10 @@ class BlackBoxAttack(object):
         # get objects list
         with torch.no_grad():
             # result = self.attack_model(return_loss=False, rescale=True, attack_mode=self.attack_mode, **data)
-            result = get_predict_bbox_single_image(self.attack_model, 640, self.ori_img)
+            result = get_predict_bbox_single_image(self.attack_model, 640, self.ori_img, 81)
         if 'IoU' in self.name and 'GT' not in self.name:
             # bboxes_clean, bbox_scores_clean, labels_clean = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
-            bboxes_clean, bbox_scores_clean, labels_clean = result[:, 0:4], result[:, 4], result[:, 4]
+            bboxes_clean, bbox_scores_clean, labels_clean = result
         elif 'GT' in self.name and gt_info is not None:
             bboxes_clean, bbox_scores_clean, labels_clean, labels_dic = gt_info
             temp = np.expand_dims(np.max(bbox_scores_clean, axis=1), 1)

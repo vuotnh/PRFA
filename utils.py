@@ -404,6 +404,35 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     return gious
 
 
+def filter_scores_labels(scores, labels, objects):
+    scores_smooth_adv = list()
+    labels_adv = list()
+    if len(labels) != 0:
+        for i in range(len(labels)):
+            if labels[i] in objects:
+                scores_smooth_adv.append(scores[i])
+                labels_adv.append(labels[i])
+    scores_smooth_adv = np.array(scores_smooth_adv)
+    labels_adv = np.array(labels_adv)
+    return scores_smooth_adv, labels_adv
+
+
+def filter_bboxes_scores_labels(bboxes, scores, labels, objects):
+    bboxes_adv = list()
+    scores_smooth_adv = list()
+    labels_adv = list()
+    if len(labels) != 0:
+        for i in range(len(labels)):
+            if labels[i] in objects:
+                bboxes_adv.append(bboxes[i])
+                scores_smooth_adv.append(scores[i])
+                labels_adv.append(labels[i])
+    bboxes_adv = np.array(bboxes_adv)
+    scores_smooth_adv = np.array(scores_smooth_adv)
+    labels_adv = np.array(labels_adv)
+    return bboxes_adv, scores_smooth_adv, labels_adv
+
+
 if __name__ == '__main__':
     print("I am just a module to be imported by others; testing here")
     t = ch.randn(2, 2, 2)

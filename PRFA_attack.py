@@ -27,9 +27,9 @@ class IoUSSAttack(BlackBoxAttack):
             zeta=zeta,
             lambda1=lambda1,
             patch_attack=patch_attack,
-            keypoints_models=keypoints_models
+            keypoints_models=keypoints_models,
             # square_expansion=square_expansion,
-            # square_init=square_init,
+            square_init=None,
             # attack_parallel=attack_parallel
         )
 
@@ -38,7 +38,7 @@ class IoUSSAttack(BlackBoxAttack):
         self.p_init = p_init
         # self.attack_parallel = attack_parallel
         # self.square_expansion = square_expansion
-        # self.square_init = square_init
+        self.square_init = None
         self.flip_flag = None
         self.flip_center_hs = None
         self.flip_center_ws = None
@@ -227,7 +227,7 @@ class IoUSSAttack(BlackBoxAttack):
                 self.p_change = p
                 self.x = xs.copy()
                 if self.square_init is None or self.square_init == 'False':
-                    init_delta = np.random.choice([-self.epsilon, self.epsilon], size=[xs.shape[0], c, 1, w])
+                    init_delta = np.random.choice([-self.epsilon, self.epsilon], size=[xs.shape[0], c, h, w])
                     xs = xs + init_delta
                 else:
                     s = int(round(np.sqrt(p * n_features / c)))

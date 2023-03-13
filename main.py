@@ -43,10 +43,9 @@ if __name__ == '__main__':
                           'ori_shape': (640, 640, 3), 'pad_shape': (640, 640, 3), 'img_norm_cfg': None
                           }, 'img': [image.reshape(1, 3, 640, 640)]}
     input_size = 640
-    mse = torch.nn.MSELoss()
     attacker = IoUSSAttack(max_loss_queries=1000, epsilon=0.01,
                            p='inf', p_init=4, lb=0., ub=1., name='IoUsquare',
                            attack_model=yolov5, attack_mode=True, targeted=False,
                            ori_img=image, model_name='YOLO', zeta=0.5, lambda1=0.5, patch_attack='square',
-                           keypoints_models=None, loss='iou_loss')
-    attacker.run(data=data, loss_fct=mse, early_stop_crit_fct=early_stop_crit_fct_with_iou)
+                           keypoints_models=None, loss='cw_loss')
+    attacker.run(data=data, loss_fct=loss_fct, early_stop_crit_fct=early_stop_crit_fct)

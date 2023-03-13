@@ -97,7 +97,7 @@ def loss_fct(attacker, xs, img_metas, clean_info):
     x_eval = torch.clamp(x_eval - attacker.ori_img, -epsilon, epsilon) + attacker.ori_img
     x_eval = torch.clamp(x_eval, attacker.lb, attacker.ub)
 
-    objects_clean = clean_info[0]
+    objects_clean = clean_info[3]
     # zip images and image metas
     data = {}
     if attacker.model_name == "CornerNet":
@@ -107,9 +107,9 @@ def loss_fct(attacker, xs, img_metas, clean_info):
     data['img_metas'] = img_metas
 
     with torch.no_grad():
-        result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
+        # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
 
-    scores_smooth_result, labels_result = demo_utils.get_scores_and_labels(result, ncls=80)
+        _, scores_smooth_result, labels_result = get_predict_bbox_single_image(attacker.attack_model, 640, x_eval, 81)
     scores_result = scores_smooth_result
 
     scores_adv, labels_adv = demo_utils.filter_scores_labels(scores_result, labels_result, objects_clean)
@@ -123,7 +123,7 @@ def loss_fct(attacker, xs, img_metas, clean_info):
     for loss_type in attacker.loss:
         if loss_type == 'cw_loss':
             criterion = cw_loss
-            loss_cls = criterion(torch.DoubleTensor(scores_adv).cuda(), torch.LongTensor(labels_target).cuda(),
+            loss_cls = criterion(torch.DoubleTensor(scores_adv), torch.LongTensor(labels_target),
                                  attacker.targeted).sum(0).unsqueeze(0)
         elif loss_type == 'xent_loss':
             criterion = xent_loss
@@ -256,7 +256,7 @@ def early_stop_crit_fct(attacker, xs, img_metas, clean_info):
     x_eval = torch.clamp(x_eval - attacker.ori_img, -epsilon, epsilon) + attacker.ori_img
     x_eval = torch.clamp(x_eval, attacker.lb, attacker.ub)
 
-    objects_clean = clean_info[0]
+    objects_clean = clean_info[3]
 
     # zip images and image metas
     data = {}
@@ -268,8 +268,8 @@ def early_stop_crit_fct(attacker, xs, img_metas, clean_info):
 
     # get scores and labels
     with torch.no_grad():
-        result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
-    score_smooth_results, label_results = demo_utils.get_scores_and_labels(result, ncls=80)
+        # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
+        _, score_smooth_results, label_results = get_predict_bbox_single_image(attacker.attack_model, 640, x_eval, 81)
 
     scores_result = score_smooth_results
 
@@ -313,9 +313,9 @@ def early_stop_crit_fct_with_iou(attacker, xs, img_metas, clean_info):
     # get bboxes, scores, labels
     with torch.no_grad():
         # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
-        result = get_predict_bbox_single_image(attacker.attack_model, 640, xs)
-    # bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
-    bbox_results, score_results, label_results = result[:, 0:4], result[:, 4], result[:, 4]
+        # result = get_predict_bbox_single_image(attacker.attack_model, 640, xs, 81)
+        # bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
+        bbox_results, score_results, label_results = get_predict_bbox_single_image(attacker.attack_model, 640, xs, 81)
     if len(label_results) == 0:
         return [False]
 
