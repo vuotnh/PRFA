@@ -43,9 +43,9 @@ if __name__ == '__main__':
                           'ori_shape': (640, 640, 3), 'pad_shape': (640, 640, 3), 'img_norm_cfg': None
                           }, 'img': [image.reshape(1, 3, 640, 640)]}
     input_size = 640
-    attacker = IoUSSAttack(max_loss_queries=1000, epsilon=0.01,
+    attacker = IoUSSAttack(max_loss_queries=8000, epsilon=0.05,
                            p='inf', p_init=4, lb=0., ub=1., name='IoUsquare',
                            attack_model=yolov5, attack_mode=True, targeted=False,
                            ori_img=image, model_name='YOLO', zeta=0.5, lambda1=0.5, patch_attack='square',
-                           keypoints_models=None, loss='cw_loss', attack_parallel=1)
-    attacker.run(data=data, loss_fct=loss_fct, early_stop_crit_fct=early_stop_crit_fct)
+                           keypoints_models=None, loss='cw_loss', attack_parallel=10)
+    attacker.run(data=data, loss_fct=loss_fct_with_iou, early_stop_crit_fct=early_stop_crit_fct)

@@ -155,10 +155,8 @@ class BlackBoxAttack(object):
             results_records_iter_list = demo_utils.results_records_iter_list_for_nes
         # get objects list
         with torch.no_grad():
-            # result = self.attack_model(return_loss=False, rescale=True, attack_mode=self.attack_mode, **data)
             result = get_predict_bbox_single_image(self.attack_model, 640, self.ori_img, 81)
         if 'IoU' in self.name and 'GT' not in self.name:
-            # bboxes_clean, bbox_scores_clean, labels_clean = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
             bboxes_clean, bbox_scores_clean, labels_clean = result
         elif 'GT' in self.name and gt_info is not None:
             bboxes_clean, bbox_scores_clean, labels_clean, labels_dic = gt_info
@@ -332,8 +330,7 @@ class BlackBoxAttack(object):
             # update dones mask
             # dones_mask = np.logical_or(dones_mask, early_stop_crit_fct(xs_t.cpu().numpy()))
             dones_mask = early_stop_crit_fct(self, xs_t.cpu().numpy(), img_metas, clean_info)
-            # its += 1
-            self.is_new_batch = False
+            # its += 1            self.is_new_batch = False
 
             # success_mask = dones_mask * correct_classified_mask
 
@@ -415,5 +412,6 @@ class BlackBoxAttack(object):
             return num_loss_queries, vis_result, results_records, quires_records
         if vis_attack_step is not None and vis_attack_step:
             return num_loss_queries, vis_result
+
 
         return num_loss_queries

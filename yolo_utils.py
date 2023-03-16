@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 def label_smooth(scores, labels, n_cls):
     result = np.ones([len(labels), n_cls])
     result = ((1 - scores) / (n_cls - 1)).numpy().reshape(len(labels), 1) * result
-    for i in range(len(labels)):
-        result[i, labels[i]] = scores[i]
+    result[np.arange(len(labels)), labels] = scores
     return result
 
 

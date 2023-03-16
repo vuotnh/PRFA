@@ -216,6 +216,8 @@ class IoUSSAttack(BlackBoxAttack):
         'pad_shape', 'scale_factor', 'flip', 'flip_direction',
         'img_norm_cfg')``
         """
+
+        print("call _suggest")
         xs = xs_t.cpu().numpy().transpose(0, 3, 1, 2)
         c, h, w = xs.shape[1:]
         n_features = c * h * w
@@ -279,14 +281,14 @@ class IoUSSAttack(BlackBoxAttack):
 
                 # attack_parallel_num, parallel_init_flag = self.attack_parallel_selection(self.attack_parallel, self.i, 10000)
                 # if parallel_init_flag or not self.flip_flag:
-                #     for _ in range(0, int(attack_parallel_num)):    
-                #     # for _ in range(0, int(self.attack_parallel)):    
-                #         if len(attack_points) > 10000:                        
+                #     for _ in range(0, int(attack_parallel_num)):
+                #     # for _ in range(0, int(self.attack_parallel)):
+                #         if len(attack_points) > 10000:
                 #             center_h, center_w = attack_points[np.random.randint(0, len(attack_points))]
                 #         else:
                 #             center_h = np.random.randint(0, h - s)
                 #             center_w = np.random.randint(0, w - s)
-
+                #
                 #     center_hs.append(center_h)
                 #     center_ws.append(center_w)
 

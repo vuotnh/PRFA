@@ -129,7 +129,10 @@ def loss_fct(attacker, xs, img_metas, clean_info):
             criterion = xent_loss
             loss_cls = criterion(torch.DoubleTensor(scores_adv).cuda(), torch.LongTensor(labels_target).cuda(),
                                  attacker.targeted).sum(0).unsqueeze(0)
-
+        elif loss_type == 'iou_loss':
+            criterion = iou_loss
+            loss_cls = criterion(torch.DoubleTensor(scores_adv), torch.LongTensor(labels_target),
+                                 attacker.targeted).sum(0).unsqueeze(0)
         # if loss_type == 'iou_loss':
         #     print('iou_loss')
         #     print(type(loss_cls))
@@ -159,8 +162,9 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
 
     with torch.no_grad():
         # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
-        result = get_predict_bbox_single_image(attacker.attack_model, 640, xs)
-    bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
+        result = get_predict_bbox_single_image(attacker.attack_model, 640, xs, 81)
+    # bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
+    bbox_results, score_results, label_results = result
 
     bboxes_adv, scores_adv, labels_adv = demo_utils.filter_bboxes_scores_labels(bbox_results, score_results,
                                                                                 label_results, objects_clean)
@@ -179,8 +183,11 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
         if loss_type == 'iou_loss':
             iou_criterion = iou_loss
 
-    loss_cls = torch.DoubleTensor([0.0]).cuda()
-    loss_iou = torch.DoubleTensor([0.0]).cuda()
+    # loss_cls = torch.DoubleTensor([0.0]).cuda()
+    # loss_iou = torch.DoubleTensor([0.0]).cuda()
+
+    loss_cls = torch.DoubleTensor([0.0])
+    loss_iou = torch.DoubleTensor([0.0])
 
     # for object_clean in objects_clean:
     #     pred_indexes = np.where(labels_adv==object_clean)[0]
@@ -195,19 +202,25 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
     # scores_mask = [ scores.max() < attacker.zeta for scores in scores_adv]
     scores_mask = [scores.max() < 1.0 for scores in scores_adv]
     pred_scores = scores_adv[scores_mask]
+    pred_bboxes = bboxes_adv[scores_mask]
     labels_target = labels_target[scores_mask]
     if labels_dic is not None and loss_type == 'cw_loss':
         loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).cuda(), torch.LongTensor(labels_target).cuda(), False,
                                   labels_dic=labels_dic).sum(0).unsqueeze(0)
+    elif loss_type == 'iou_loss':
+        loss_cls += iou_criterion(pred_bboxes, bboxes_clean,
+                                  False).sum(0).unsqueeze(0)
     else:
-        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).cuda(), torch.LongTensor(labels_target).cuda(),
+        # loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).cuda(), torch.LongTensor(labels_target).cuda(),
+        #                           False).sum(0).unsqueeze(0)
+        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores), torch.LongTensor(labels_target),
                                   False).sum(0).unsqueeze(0)
 
     for object_clean in objects_clean:
         pred_indexes = np.where(labels_adv == object_clean)[0]
         gt_indexes = np.where(labels_clean == object_clean)[0]
 
-        pred_bboxes = bbox_results[pred_indexes]
+        pred_bboxes = bbox_results.numpy()[pred_indexes]
         pred_scores_adv = score_results[pred_indexes]
         # pick scores > 0.05 bbox
         pred_bboxes = pred_bboxes[score_results[pred_indexes, object_clean] > attacker.zeta]
@@ -218,16 +231,18 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
             pred_bboxes_weight = pred_bboxes_weight.max()
 
         pred_bboxes_tor = torch.from_numpy(pred_bboxes).unsqueeze(0).float()
-        gt_bboxes_tor = torch.from_numpy(bboxes_clean[gt_indexes]).unsqueeze(0).float()
+        gt_bboxes_tor = torch.from_numpy(bboxes_clean.numpy()[gt_indexes]).unsqueeze(0).float()
         # pick iou scores > 0.5 bbox
         ious = demo_utils.bbox_overlaps(pred_bboxes_tor, gt_bboxes_tor, mode='iou', is_aligned=False).clamp(min=1e-6)
         if ious.size(-2) == 0:
-            loss_iou += torch.DoubleTensor([0.0]).cuda()
+            # loss_iou += torch.DoubleTensor([0.0]).cuda()
+            loss_iou += torch.DoubleTensor([0.0])
         else:
             ious = ious.view(-1)
             # print(ious)
             # print(-ious.log().sum())
-            loss_iou += -ious.log().sum().cuda()
+            # loss_iou += -ious.log().sum().cuda()
+            loss_iou += -ious.log().sum()
             # print(loss_iou)
 
     # for loss_type in attacker.loss:
