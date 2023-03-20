@@ -163,7 +163,7 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
 
     with torch.no_grad():
         # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
-        result = get_predict_bbox_single_image(attacker.attack_model.to(device), 640, xs.to(device), 81)
+        result = get_predict_bbox_single_image(attacker.attack_model, 640, xs, 81)
     # bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
     bbox_results, score_results, label_results = result
 

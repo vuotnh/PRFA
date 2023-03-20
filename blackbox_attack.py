@@ -140,6 +140,8 @@ class BlackBoxAttack(object):
 
         :return: a dict of logs whose length is the number of iterations
         """
+        num_iterations = 0
+
         if vis_attack_step is not None:
             vis_result = []
         if self.name == 'IoUzosignsgd':
@@ -259,6 +261,7 @@ class BlackBoxAttack(object):
         # to inform self._suggest this is  a new batch
         self.is_new_batch = True
         while True:
+            num_iterations += 1
             if self.name == "IoUnes" or self.name == "IoUzosignsgd" or self.name == "bandit":
                 # if np.any(num_loss_queries + num_crit_queries >= self.max_loss_queries):
                 if np.any(num_loss_queries >= self.max_loss_queries):
@@ -308,7 +311,6 @@ class BlackBoxAttack(object):
             # updated x here
             dones = np.all(dones_mask)
             xs_t = self.proj_replace(xs_t, sugg_xs_t, t(dones.reshape(-1, *[1] * num_axes).astype(np.float32)))
-            print("run oke")
 
             # feature, _ = loss_fct(xs_t.cpu().numpy(), com = True)
             # inner = ch.mm(feature_oo,feature.transpose(0,1))
@@ -335,6 +337,8 @@ class BlackBoxAttack(object):
 
             # success_mask = dones_mask * correct_classified_mask
 
+            if num_iterations % 50 == 0:
+                print(f"Iterations: {num_iterations} - Num loss queries: {num_loss_queries}")
             # import pdb; pdb.set_trace()
             # pdb.set_trace()
             # feature_o = feature
@@ -413,6 +417,5 @@ class BlackBoxAttack(object):
             return num_loss_queries, vis_result, results_records, quires_records
         if vis_attack_step is not None and vis_attack_step:
             return num_loss_queries, vis_result
-
 
         return num_loss_queries

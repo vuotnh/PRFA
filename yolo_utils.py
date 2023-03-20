@@ -15,7 +15,8 @@ def get_predict_bbox_single_image(model, input_size, image_tensor, num_classes, 
     # image = image_tensor.permute(1, 2, 0).numpy()
     if len(image_tensor.shape) == 3:
         image_tensor = image_tensor.reshape(1, image_tensor.shape[0], image_tensor.shape[1], image_tensor.shape[2])
-    output = model(image_tensor.reshape(1, input_size, input_size, 3))[0][0]
+    output = model(image_tensor.reshape(image_tensor.shape[0], input_size, input_size, 3))[0]
+    # output = model(image_tensor.reshape(image_tensor.shape[0], input_size, input_size, 3))
 
     pred_bbox_scores = output[:, 4]
     pred_xywh = output[:, 0:4]

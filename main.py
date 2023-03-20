@@ -38,14 +38,17 @@ if __name__ == '__main__':
     yolov5 = tf.keras.models.load_model('./yolov5s_saved_model')
 
     image_dataset = train_loader('./data', 8)
-    image = next(iter(image_dataset))[1]
-    data = {'img_metas': {'img_shape': (640, 640, 3), 'scale_factor': 0.1, 'flip': True, 'filename': 'test.png',
-                          'ori_shape': (640, 640, 3), 'pad_shape': (640, 640, 3), 'img_norm_cfg': None
-                          }, 'img': [image.reshape(1, 3, 640, 640)]}
     input_size = 640
-    attacker = IoUSSAttack(max_loss_queries=8000, epsilon=0.05,
-                           p='inf', p_init=4, lb=0., ub=1., name='IoUsquare',
-                           attack_model=yolov5, attack_mode=True, targeted=False,
-                           ori_img=image, model_name='YOLO', zeta=0.5, lambda1=0.5, patch_attack='square',
-                           keypoints_models=None, loss='cw_loss', attack_parallel=10)
-    attacker.run(data=data, loss_fct=loss_fct_with_iou, early_stop_crit_fct=early_stop_crit_fct)
+
+    for image_batch in image_dataset:
+        for image in image_batch:
+            attacker = IoUSSAttack(max_loss_queries=8000, epsilon=0.05,
+                                   p='inf', p_init=4, lb=0., ub=1., name='IoUsquare',
+                                   attack_model=yolov5, attack_mode=True, targeted=False,
+                                   ori_img=image, model_name='YOLO', zeta=0.5, lambda1=0.5, patch_attack='square',
+                                   keypoints_models=None, loss='cw_loss', attack_parallel=10)
+            data = {'img_metas': {'img_shape': (640, 640, 3), 'scale_factor': 0.1, 'flip': True, 'filename': 'test.png',
+                                  'ori_shape': (640, 640, 3), 'pad_shape': (640, 640, 3), 'img_norm_cfg': None
+                                  }, 'img': [image.reshape(1, 3, 640, 640)]}
+
+            attacker.run(data=data, loss_fct=loss_fct_with_iou, early_stop_crit_fct=early_stop_crit_fct)
