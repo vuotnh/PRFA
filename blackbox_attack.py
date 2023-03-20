@@ -67,6 +67,7 @@ class BlackBoxAttack(object):
         # self.square_expansion = square_expansion
         self.attack_parallel = attack_parallel
         self.square_init = square_init
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # the _proj method takes pts and project them into the constraint set:
         # which are
         #  1. epsilon lp-ball around xs

@@ -141,6 +141,7 @@ def loss_fct(attacker, xs, img_metas, clean_info):
 
 
 def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     epsilon = attacker.epsilon
     x_eval = torch.FloatTensor(xs.transpose(0, 3, 1, 2))
     x_eval = torch.clamp(x_eval - attacker.ori_img, -epsilon, epsilon) + attacker.ori_img
@@ -162,7 +163,7 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
 
     with torch.no_grad():
         # result = attacker.attack_model(return_loss=False, rescale=True, attack_mode=attacker.attack_mode, **data)
-        result = get_predict_bbox_single_image(attacker.attack_model, 640, xs, 81)
+        result = get_predict_bbox_single_image(attacker.attack_model.to(device), 640, xs.to(device), 81)
     # bbox_results, score_results, label_results = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
     bbox_results, score_results, label_results = result
 
@@ -186,8 +187,8 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
     # loss_cls = torch.DoubleTensor([0.0]).cuda()
     # loss_iou = torch.DoubleTensor([0.0]).cuda()
 
-    loss_cls = torch.DoubleTensor([0.0])
-    loss_iou = torch.DoubleTensor([0.0])
+    loss_cls = torch.DoubleTensor([0.0]).to(device)
+    loss_iou = torch.DoubleTensor([0.0]).to(device)
 
     # for object_clean in objects_clean:
     #     pred_indexes = np.where(labels_adv==object_clean)[0]
@@ -205,16 +206,15 @@ def loss_fct_with_iou(attacker, xs, img_metas, clean_info):
     pred_bboxes = bboxes_adv[scores_mask]
     labels_target = labels_target[scores_mask]
     if labels_dic is not None and loss_type == 'cw_loss':
-        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).cuda(), torch.LongTensor(labels_target).cuda(), False,
-                                  labels_dic=labels_dic).sum(0).unsqueeze(0)
+        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).to(device), torch.LongTensor(labels_target).to(device)
+                                  , False, labels_dic=labels_dic).sum(0).unsqueeze(0)
     elif loss_type == 'iou_loss':
         loss_cls += iou_criterion(pred_bboxes, bboxes_clean,
                                   False).sum(0).unsqueeze(0)
     else:
-        # loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).cuda(), torch.LongTensor(labels_target).cuda(),
-        #                           False).sum(0).unsqueeze(0)
-        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores), torch.LongTensor(labels_target),
+        loss_cls += cls_criterion(torch.DoubleTensor(pred_scores).to(device), torch.LongTensor(labels_target).to(device),
                                   False).sum(0).unsqueeze(0)
+
 
     for object_clean in objects_clean:
         pred_indexes = np.where(labels_adv == object_clean)[0]

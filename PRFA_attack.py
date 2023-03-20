@@ -45,6 +45,7 @@ class IoUSSAttack(BlackBoxAttack):
         self.flip_deltas = None
         self.flip_zone = None
         self.p_change = None
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if self.patch_attack is not None:
             self.attack_points = None
 
@@ -217,7 +218,6 @@ class IoUSSAttack(BlackBoxAttack):
         'img_norm_cfg')``
         """
 
-        print("call _suggest")
         xs = xs_t.cpu().numpy().transpose(0, 3, 1, 2)
         c, h, w = xs.shape[1:]
         n_features = c * h * w
