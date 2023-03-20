@@ -9,7 +9,7 @@ from bbox_utils import bbox_to_attack_points, mask_to_attack_points, unique_rows
 
 class IoUSSAttack(BlackBoxAttack):
     def __init__(self, max_loss_queries, epsilon, p, p_init, lb, ub, name, attack_model, attack_mode,
-                 loss, targeted, ori_img, model_name, zeta, lambda1, patch_attack, keypoints_models, ):
+                 loss, targeted, ori_img, model_name, zeta, lambda1, patch_attack, keypoints_models, attack_parallel):
 
         super().__init__(
             max_loss_queries=max_loss_queries,
@@ -27,18 +27,18 @@ class IoUSSAttack(BlackBoxAttack):
             zeta=zeta,
             lambda1=lambda1,
             patch_attack=patch_attack,
-            keypoints_models=keypoints_models
+            keypoints_models=keypoints_models,
             # square_expansion=square_expansion,
-            # square_init=square_init,
-            # attack_parallel=attack_parallel
+            square_init=None,
+            attack_parallel=attack_parallel
         )
 
         self.best_loss = None
         self.i = 0
         self.p_init = p_init
-        # self.attack_parallel = attack_parallel
+        self.attack_parallel = attack_parallel
         # self.square_expansion = square_expansion
-        # self.square_init = square_init
+        self.square_init = None
         self.flip_flag = None
         self.flip_center_hs = None
         self.flip_center_ws = None
@@ -216,6 +216,8 @@ class IoUSSAttack(BlackBoxAttack):
         'pad_shape', 'scale_factor', 'flip', 'flip_direction',
         'img_norm_cfg')``
         """
+
+        print("call _suggest")
         xs = xs_t.cpu().numpy().transpose(0, 3, 1, 2)
         c, h, w = xs.shape[1:]
         n_features = c * h * w
@@ -227,7 +229,7 @@ class IoUSSAttack(BlackBoxAttack):
                 self.p_change = p
                 self.x = xs.copy()
                 if self.square_init is None or self.square_init == 'False':
-                    init_delta = np.random.choice([-self.epsilon, self.epsilon], size=[xs.shape[0], c, 1, w])
+                    init_delta = np.random.choice([-self.epsilon, self.epsilon], size=[xs.shape[0], c, h, w])
                     xs = xs + init_delta
                 else:
                     s = int(round(np.sqrt(p * n_features / c)))
@@ -279,14 +281,14 @@ class IoUSSAttack(BlackBoxAttack):
 
                 # attack_parallel_num, parallel_init_flag = self.attack_parallel_selection(self.attack_parallel, self.i, 10000)
                 # if parallel_init_flag or not self.flip_flag:
-                #     for _ in range(0, int(attack_parallel_num)):    
-                #     # for _ in range(0, int(self.attack_parallel)):    
-                #         if len(attack_points) > 10000:                        
+                #     for _ in range(0, int(attack_parallel_num)):
+                #     # for _ in range(0, int(self.attack_parallel)):
+                #         if len(attack_points) > 10000:
                 #             center_h, center_w = attack_points[np.random.randint(0, len(attack_points))]
                 #         else:
                 #             center_h = np.random.randint(0, h - s)
                 #             center_w = np.random.randint(0, w - s)
-
+                #
                 #     center_hs.append(center_h)
                 #     center_ws.append(center_w)
 

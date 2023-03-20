@@ -19,7 +19,7 @@ class BlackBoxAttack(object):
                  max_crit_queries=np.inf,
                  epsilon=0.5, p='inf', lb=0., ub=1., name="nes", attack_model=None, attack_mode=None,
                  attack_logistics=None, loss=None, targeted=None, ori_img=None, model_name=None, zeta=None,
-                 lambda1=None, patch_attack=None, keypoints_models=None):
+                 lambda1=None, patch_attack=None, keypoints_models=None, square_init=None, attack_parallel=1):
         """
         Args:
             max_loss_queries ([int]): [ maximum number of calls allowed to loss oracle per data pt]
@@ -65,8 +65,8 @@ class BlackBoxAttack(object):
         self.patch_attack = patch_attack
         self.keypoints_models = keypoints_models
         # self.square_expansion = square_expansion
-        # self.attack_parallel = attack_parallel
-        # self.square_init = square_init
+        self.attack_parallel = attack_parallel
+        self.square_init = square_init
         # the _proj method takes pts and project them into the constraint set:
         # which are
         #  1. epsilon lp-ball around xs
@@ -155,11 +155,9 @@ class BlackBoxAttack(object):
             results_records_iter_list = demo_utils.results_records_iter_list_for_nes
         # get objects list
         with torch.no_grad():
-            # result = self.attack_model(return_loss=False, rescale=True, attack_mode=self.attack_mode, **data)
-            result = get_predict_bbox_single_image(self.attack_model, 640, self.ori_img)
+            result = get_predict_bbox_single_image(self.attack_model, 640, self.ori_img, 81)
         if 'IoU' in self.name and 'GT' not in self.name:
-            # bboxes_clean, bbox_scores_clean, labels_clean = demo_utils.get_bboxes_scores_and_labels(result, ncls=80)
-            bboxes_clean, bbox_scores_clean, labels_clean = result[:, 0:4], result[:, 4], result[:, 4]
+            bboxes_clean, bbox_scores_clean, labels_clean = result
         elif 'GT' in self.name and gt_info is not None:
             bboxes_clean, bbox_scores_clean, labels_clean, labels_dic = gt_info
             temp = np.expand_dims(np.max(bbox_scores_clean, axis=1), 1)
@@ -309,6 +307,7 @@ class BlackBoxAttack(object):
             # updated x here
             dones = np.all(dones_mask)
             xs_t = self.proj_replace(xs_t, sugg_xs_t, t(dones.reshape(-1, *[1] * num_axes).astype(np.float32)))
+            print("run oke")
 
             # feature, _ = loss_fct(xs_t.cpu().numpy(), com = True)
             # inner = ch.mm(feature_oo,feature.transpose(0,1))
@@ -331,8 +330,7 @@ class BlackBoxAttack(object):
             # update dones mask
             # dones_mask = np.logical_or(dones_mask, early_stop_crit_fct(xs_t.cpu().numpy()))
             dones_mask = early_stop_crit_fct(self, xs_t.cpu().numpy(), img_metas, clean_info)
-            # its += 1
-            self.is_new_batch = False
+            # its += 1            self.is_new_batch = False
 
             # success_mask = dones_mask * correct_classified_mask
 
@@ -340,11 +338,13 @@ class BlackBoxAttack(object):
             # pdb.set_trace()
             # feature_o = feature
             xs_to = xs_t
-            if len(img_metas) != 1:
-                data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
-                data['img'][1] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
-            else:
-                data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+
+            # comment by vuotnh
+            # if len(img_metas) != 1:
+            #     data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+            #     data['img'][1] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
+            # else:
+            data['img'][0] = torch.FloatTensor(xs_t.cpu().numpy().transpose(0, 3, 1, 2))
 
             # visualize opt step
             if vis_attack_step is not None and vis_attack_step:
@@ -412,5 +412,6 @@ class BlackBoxAttack(object):
             return num_loss_queries, vis_result, results_records, quires_records
         if vis_attack_step is not None and vis_attack_step:
             return num_loss_queries, vis_result
+
 
         return num_loss_queries
